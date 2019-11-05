@@ -1,0 +1,391 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}   % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{lipsum}
+
+\usepackage{longtable}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{amsmath}
+
+\title{VIP-193: Committee-Based POA}
+\author{
+  Ziheng (Peter) Zhou \vspace{1ex}\\
+  VeChain Foundation \\
+  \texttt{peter.zhou@vechain.com}
+  \And
+  Zhijie Ren \vspace{1ex} \\
+  VeChain Foundation \\
+  \texttt{zhijie.ren@vechain.com}
+}
+\date{}
+
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}\vspace{3pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}\vspace{3pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}\vspace{3pt}}m{#1}}
+
+\begin{document}
+\maketitle
+
+% \begin{abstract}
+% \end{abstract}
+
+% keywords can be removed
+% \keywords{First keyword \and Second keyword \and More}
+
+
+\section{Overview}
+The Proof-of-Authority consensus algorithm~\cite{VWP18}, or POA in short, is efficient of using network bandwidth. It divides time into rounds with a fixed length and assumes that the majority of its (authorized) nodes perform consensus in the same round. 
+
+In each round, nodes select a leader (the node responsible for generating a new block) based on the round number, block height and their local views of active nodes. Therefore, the procedure can be considered instant, which allows more time for transmitting transaction (TX) data in each consensus round.
+
+POA relies on its nodes to behave honestly based on their stake reputation and economic incentives. However, it cannot stop a malicious leader to produce two inconsistent blocks to cause forks or a collusion of consecutive leaders to produce a parallel chain.
+
+To improve the security of POA, we propose to introduce a committee to endorse the block generated in each consensus round. The verifiable random function~(VRF)~\cite{PapEtAl99} is used for nodes to locally decide their committee memberships. With a committee, a malicious leader would have to collude with the committee to cause inconsistency. However, the property of VRF guarantees that the committee is selected randomly. Therefore, it makes it much more difficult for adversaries to launch such attacks.  
+
+\section{Specifications}
+\subsection{Notations}
+\renewcommand{\arraystretch}{2}
+\begin{longtable}{p{3cm} p{10cm}}
+    Symbol  & Description \\
+    \hline\hline
+    $N$ & Total number of nodes \\
+    \hline
+    $u=1,2,\dots,N$ & node index \\
+    \hline
+    $H(\cdot)$ & Cryptographic hash function \\
+    \hline
+    $\textrm{Sig}_u(\cdot)$ & Signature of $u$ \\
+    \hline
+    $\textrm{pk}_u$ & Public key of $u$ \\
+    \hline
+    $\textrm{sk}_u$ & Private key of $u$ \\
+    \hline
+    $\rho\left(\cdot\right)$ & Merkle root of the input set\\
+    \hline\hline
+    $r$ & Consensus round number \\
+    \hline
+    $l_r=1,2,...,N$ & Leader in round $r$ \\
+    \hline
+    $s_r$ & Block summary produced by $l_r$ \\
+    \hline
+    $\tau_r$ & $s_r\,\|\,\textrm{Sig}_{l_r}(s_r)$ \\
+    \hline
+    $d$ & Number of endorsements (from committee members) required for a valid block \\
+    \hline
+    $\Sigma_r$ & Pending transaction set prepared by $l_r$ \\
+    \hline
+    $B_{u,r}^*$ & Last block of the canonical chain recognized by $u$ in round $r$\\ 
+    \hline
+    $H_{vrf},\Pi_{vrf},V_{vrf}$ & Functions that compute hash, generate proof and verify proof defined in the VRF scheme, respectively \\
+    \hline
+    $\textrm{M}_r$ & Common VRF message generated for committee selection \\
+    \hline
+    $\omega$, $\omega^*$ & Branch and trunk \\
+    \hline
+    $m$, $L$ & Epoch number and the number of consensus rounds in one epoch \\
+    \hline
+    $b_m$ & Random beacon computed using randomness from the last block of the $m$'th epoch \\
+    \hline
+\end{longtable}
+
+\subsection{Committee Membership}
+\label{sec:committee}
+The verifiable random function can be considered as a public-key version of keyed cryptographic hash. The hash of a given message can only be computed by the owner of the private key and can be verified by anyone given the public key and message. The scheme defines the following functions:
+\begin{itemize}
+    \item $\pi\leftarrow\Pi_{vrf}(\textrm{sk},m)$ - function that generates VRF proof;
+    \item $\{T, F\}\leftarrow V_{vrf}(\textrm{pk}_u,m,\pi)$ - function that verify VRF proof;
+    \item $h\leftarrow H_{vrf}(\textrm{sk},m)=H(\pi)$ - function that computes the hash.
+\end{itemize}
+
+Node~$u$ determines his committee membership by Algorithm~\ref{alg:committee-gen}. Here $\textrm{M}_r$ is the common VRF message computed in round $r$ and $\epsilon$ a predefined threshold. {\color{red} See Section~?? for details of the computation of $\theta_r$.}
+
+\begin{algorithm}[H]
+\caption{Procedure for $u$ to determine his committee membership. }
+\label{alg:committee-gen}
+\begin{spacing}{1.2}
+\begin{algorithmic}[1]
+    \vspace{1ex}
+    \State Compute $\pi_{u,r} = \Pi_{vrf}(\textrm{sk}_u,\textrm{M}_r)$ and $\lambda=H\left(\pi_{u,r}\right)$
+    \If{$\lambda\leq\epsilon$}
+        \State Return $\left(T,\pi_{u,r}\right)$
+    \Else 
+        \State Return $F$
+    \EndIf
+\end{algorithmic}
+\end{spacing}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Procedure for anyone to validate $u$'s claimed committee membership.}
+\label{alg:committee-valid}
+\begin{spacing}{1.2}
+\begin{algorithmic}[1]
+    \vspace{1ex}
+    \If{$V_{vrf}(\textrm{pk}_u,\pi_{u,r})==F$}
+        \State Return $F$
+    \EndIf
+    \State $\lambda\leftarrow H(\pi_{u,r})$
+    \If{$\lambda\leq\epsilon$}
+        \State Return $T$
+    \Else 
+        \State Return $F$
+    \EndIf
+\end{algorithmic}
+\end{spacing}
+\end{algorithm}
+
+% The following is the procedure for node $u$ to decide whether he is a committee member in round $r$:
+% \begin{enumerate}
+%     \item Compute seed $\theta_r$. The computation is deterministic for all nodes;
+%     \item Compute $\lambda=f_\textrm{vrf}\left(sk_u,\theta_r\right)$;
+%     \item $u$ knows he is a committee member in round $r$ if $\lambda\leq\epsilon$ where $\epsilon$ is a predefined threshold.
+% \end{enumerate}
+
+\subsection{Block Summary}
+Leader $l_r$ computes block summary~$s_r$ of the new block he wants to public and broadcast $s_r$ for endorsements from committee members. Algorithms~\ref{alg:bs-create} and \ref{alg:bs-valid} shows how to compute and validate $s_r$ for $l_r$ and other nodes, respectively.
+
+\begin{algorithm}[H]
+\caption{Procedure for $l_r$ to compute and broadcast $s_r$.}
+\label{alg:bs-create}
+\begin{spacing}{1.2}
+\begin{algorithmic}[1]
+    \vspace{1ex}
+    \State Prepares $\Sigma_r$ and computes $\rho\left(\Sigma_r\right)$
+    \State Get the last block on the canonical chain, $B_{l_r}^*$ and computer $h_0=H(\textrm{Header}(B_{l_r,r}^*))$
+    \State $s_r\leftarrow h_0\,\|\,r\,\|\,\rho\left(\Sigma_r\right)$
+    \State Broadcast $\left(s_r,\textrm{Sig}_{l_r}(s_r)\right)$
+\end{algorithmic}
+\end{spacing}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Procedure for $u$ to validate $s_r$.}
+\label{alg:bs-valid}
+\begin{spacing}{1.2}
+\begin{algorithmic}[1]
+    \vspace{1ex}
+    \State Compute $l_r$
+    \If{$s_r$ is not sent from $l_r$}
+        \State Return $F$
+    \EndIf
+    \State Get $B_{u,r}^*$ and compute $\textrm{Header}(B_{u,r}^*)$
+    \If{$\textrm{Header}(B_{u,r}^*)\neq\textrm{Header}(B_{l_r,r}^*)$}
+        \State Return $F$
+    \EndIf
+    \State Verify $\textrm{Sig}_{l_r}(s_r)$
+    \State Return $T$
+\end{algorithmic}
+\end{spacing}
+\end{algorithm}
+
+\subsection{Endorsement}
+
+After receiving a block summary~$s_r$, if $u$ is a committee member, he then executes Algorithm~\ref{alg:endorse-gen} to endorse the block proposed by $l_r$. Here we define $\tau_r=s_r\,\|\,\textrm{Sig}_{l_r}(s_r)$.
+
+\begin{algorithm}[H]
+\caption{Procedure for $u$ to endorse a new block.}
+\label{alg:endorse-gen}
+\begin{spacing}{1.2}
+\begin{algorithmic}[1]
+    \vspace{1ex}
+    \State Verify $s_r$ by Algorithm~\ref{alg:bs-valid}
+    \State Broadcast $\Big(u,s_r,\textrm{Sig}_u(\tau_r),\pi_{u,r}\Big)$
+\end{algorithmic}
+\end{spacing}
+\end{algorithm}
+
+Once a node receives an endorsement message from $u$, he first verify $s_r$ by Algorithm~\ref{alg:bs-valid} and then validate $u$'s endorsement by Algorithm~\ref{alg:endorse-valid}.
+
+\begin{algorithm}[H]
+\caption{Procedure for validating $u$'s endorsement.}
+\label{alg:endorse-valid}
+\begin{spacing}{1.2}
+\begin{algorithmic}[1]
+    \vspace{1ex}
+    % \If{$V_{vrf}(\textrm{pk}_u,\pi_{u,r})==FALSE$}
+    %     \State Return $F$
+    % \EndIf
+    % \If{$H(\pi_{u,r})>\epsilon$}
+    %     \State Return $F$
+    % \EndIf
+    \State Verify $u$'s committee membership by Algorithm~\ref{alg:committee-valid}
+    \State Verify $\textrm{Sig}_{u}(\tau_r)$
+\end{algorithmic}
+\end{spacing}
+\end{algorithm}
+
+\subsection{Block}
+
+Algorithm~\ref{alg:block-gen} describes the procedure for leader~$l_r$ to publish a new block in round~$r$.
+
+\begin{algorithm}[H]
+\caption{Procedure for $l_r$ to publish a new block.}
+\label{alg:block-gen}
+\begin{spacing}{1.2}
+\begin{algorithmic}[1]
+    \vspace{1ex}
+    \State Compute and broadcast $s_r$ by Algorithm~\ref{alg:bs-create}
+    \State Broadcast $\Sigma_r$
+    \State Wait for $d$ valid endorsements and arrange the committee members such that $u_1<u_2<\dots<u_d$
+    \State $\Gamma_r\leftarrow\textrm{Sig}_{u_1}(\tau_r)\,\|\,\textrm{Sig}_{u_2}(\tau_r)\,\|\,\dots\,\|\,\textrm{Sig}_{u_d}(\tau_r)$
+    \State Broadcast $\left(s_r,\textrm{Sig}_{l_r}(s_r),\textrm{Sig}_{l_r}(\Gamma_r),
+    \left\{u_i,\textrm{Sig}_{u_i}(\tau_r),\pi_{u_i,r}\right\}_{i=1}^d\right)$
+    \State Construct header body~$\Omega$ and broadcast $\textrm{Sig}_{l_r}(\Omega)$
+\end{algorithmic}
+\end{spacing}
+\end{algorithm}
+
+A block header body $\Omega$ contains the following elements:
+\begin{enumerate}
+    \item Hash of the parent header $H\left(\textrm{Header}\left(B_{l_r,r}^*\right)\right)$ 
+    \item Round number $r$
+    \item TX Merkle tree root $\rho\left(\Sigma_r\right)$
+    \item Signature $\textrm{Sig}_{l_r}(s_r)$
+    \item Committee member list $\left(u_1<u_2<\dots<u_d\right)$
+    \item Merkle tree root of VRF proofs $\left\{\pi_{u_i,r}\right\}_{i=1}^d$
+    \item Merkle tree root of signatures $\left\{\textrm{Sig}_{u_i}(\tau_r)\right\}_{i=1}^d$
+    \item Signature $\textrm{Sig}_{l_r}(\Gamma_r)$
+    % \item Other necessary header elements such as the state root, receipt root, gas limit and etc.
+\end{enumerate}
+
+A block consists of a header $\left\{\Omega,\textrm{Sig}_{l_r}(\Omega)\right\}$ and TX set~$\Sigma_r$.
+
+\begin{algorithm}[H]
+\caption{Procedure for validating a block.}
+\label{alg:block-valid}
+\begin{spacing}{1.2}
+\begin{algorithmic}[1]
+    \vspace{1ex}
+    \State Verify $s_r$ by Algorithm~\ref{alg:bs-valid}
+    \For{$i=1,2,\dots,d$}
+        \State Verify $u_i$'s endorsement by Algorithm~\ref{alg:endorse-valid}
+    \EndFor
+    \State Construct $\Gamma_r$ and verify $\textrm{Sig}_{l_r}(\Gamma_r)$
+    \State Construct header body~$\Omega$ and verify $\textrm{Sig}_{l_r}(\Omega)$
+    \State Verify $\Sigma_r$ and $\rho\left(\Sigma_r\right)$ 
+\end{algorithmic}
+\end{spacing}
+\end{algorithm}
+
+We only list the elements related to the committee mechanism for simplicity. Algorithms~\ref{alg:block-gen} and \ref{alg:block-valid} should be adjusted accordingly to accommodate other elements such as the gas limit, state root, receipt root, etc.
+
+\subsection{Canonical Chain Rule}
+Here we re-define the rules for selecting the canonical chain (or the \textit{trunk}) based on the committee mechanism.
+
+Let $\omega$ be a branch, i.e., a chain of blocks. Given a block~$B$ on the branch, i.e.,~$B\in\omega$, we the weight of the chain starting from $B$ till the end of $\omega$,~$W(\omega,B)$, as the size of the set that contains all the leaders and committee members who have their signatures included in at least one block on the chain. Note that a node is counted as one no matter how many times he appears in the blocks.
+
+Given two branches $\omega_1$ and $\omega_2$, let $B_0$ be the last block shared by $\omega_1$ and $\omega_2$, i.e., $B_0\in\omega_1\cap\,\omega_2$ and $\forall\, B'\in\omega_1\cap\,\omega_2,\, B'\preceq B_0$. Let $N(\omega,B)$ be the operator that finds the next block of $B$ on branch~$\omega$. We determine the canonical chain~$\omega^*$ from $\omega_1$ and $\omega_2$ by Algorithm~\ref{alg:canonical-chain}:
+
+\begin{algorithm}[H]
+\caption{Rules for choosing canonical chain~$\omega^*$ from branches~$\omega_1$ and $\omega_2$.}
+\label{alg:canonical-chain}
+\begin{spacing}{1.2}
+\begin{algorithmic}[1]
+    \vspace{1ex}
+    \State $B_1\leftarrow B_0$
+    \State $B_2\leftarrow B_0$
+    \While{$W(\omega_1,B_1)==W(\omega_2,B_2)$}
+        \State $B_1\leftarrow N(\omega_1,B_1)$
+        \State $B_2\leftarrow N(\omega_2,B_2)$
+    \EndWhile
+    \If{$W(\omega_1,B_1)>W(\omega_2,B_2)$}
+        \State $\omega^*=\omega_1$
+    \ElsIf{$W(\omega_1,B_1)<W(\omega_2,B_2)$}
+        \State $\omega^*=\omega_2$
+    \Else
+        \If{$B_1$ is published later than $B_2$}
+            \State $\omega^*=\omega_1$
+        \Else
+            \State $\omega^*=\omega_2$
+        \EndIf
+    \EndIf
+\end{algorithmic}
+\end{spacing}
+\end{algorithm}
+
+\subsection{Random Beacon}
+
+As described in Section~\ref{sec:committee}, nodes need to compute a common message~$\textrm{M}_r$ to decide their committee memberships. It is desirable to add certain randomness in the computation such that adversaries only know their committee memberships in a limited period of time in future.
+
+To do that, we divide the consensus process into epochs each of which lasts for $L$ consensus rounds where $L$ is a predetermined fixed number. Let $\hat{B}_m$ be the last block in the $m$'th epoch. We then define random beacon~$b_m$ as:
+
+\begin{equation}
+    b_m \leftarrow H(\textrm{Sig}_{l_{\hat{r}}}(\Gamma_{\hat{r}}))
+\end{equation}
+
+where $\hat{r}$ is the corresponding round number. We define $b_0=H(B_{\textrm{genesis}})$.
+
+Beacon~$b_m$ can then be used to calculate VRF messages for the next $L$ rounds. In particular, we compute message~$\textrm{M}_r$ in round~$r$ as:
+
+\begin{equation}
+    \textrm{M}_r \leftarrow H(b_m\,\|\,r)
+\end{equation}
+
+where $mL+1\leq r\leq m(L+1)$.
+
+It can be seen that even when the leader in round~$\hat{r}$ is malicious, the best he can do is to go through every combination of $d$ received valid endorsements and pick the one that maximizes his interest. In this way, we significantly limit the leader's influence on the beacon.
+
+\subsection{Asynchronous Block Validation}
+ 
+
+\subsection{Double-Spending Attack}
+The main goal of introducing the committee mechanism is to make it much more difficult for malicious consensus nodes to cause inconsistency. The most damaging of such attacks is the double-spending attacks~(DSAs)~\cite{Sat08} where adversaries are allowed to take control of a few consecutive consensus rounds such that they can produce two parallel branches to launch an attack. Here we are going to infer a lower bound of the likelihood of launching a $k$-block DSA.
+
+Let $p_\epsilon$ be the probability of a node being selected as a committee member. This probability is directly related to threshold value~$\epsilon$ and is equal to every node in every round due to the use of VRF. Assume that there are $f$ malicious nodes that can behave arbitrarily. To produce two valid, but contradicting blocks in the same round, adversaries must control both the leader and $d$ committee members. The probability of existence of $d$ committee members being malicious can be computed as:
+
+\begin{equation}
+    F(p_\epsilon,d,f) = \sum_{i=d}^f \binom{f}{i}\,{p_\epsilon}^i\left(1-p_\epsilon\right)^{f-i}
+\end{equation}
+
+Therefore, the probability of adversaries controlling the whole committee for $k$ consecutive rounds is $F(p_\epsilon,d,f)^k$. Table~\ref{tab:k-prob} lists the values of this probability with different inputs. We assign $f$ based on the Byzantine Fault Tolerance~(BFT) assumption which is considered reasonable and widely used in practice.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|C{2.5cm}|C{2.5cm}|C{2.5cm}|}
+        \hline
+        $N=101$, $f=\lfloor\frac{N}{3}\rfloor$ & $k=1$ & $k=5$ & $k=10$ \\ 
+        \hline\hline
+        $p_\epsilon=0.1$, $d=7$ & $4.17\times10^{-2}$ & $1.26\times10^{-7}$ & $1.59\times10^{-14}$ \\
+        \hline
+        $p_\epsilon=0.1$, $d=8$ & $1.41\times10^{-2}$ & $5.58\times10^{-10}$ & $3.11\times10^{-19}$ \\
+        \hline
+        $p_\epsilon=0.15$, $d=11$ & $6.78\times10^{-3}$ & $1.43\times10^{-11}$ & $2.04\times10^{-22}$ \\
+        \hline
+    \end{tabular}
+    \vspace{2ex}
+    \caption{Probabilities $F(p_\epsilon,d,f)^k$ for different values of $p_\epsilon$, $d$ and $k$.}
+    \label{tab:k-prob}
+\end{table}
+
+We consider the worse-case scenario when
+\begin{enumerate}
+    \item A malicious leader~$l_{\hat{r}}$ is selected to generate a block from which beacon~$b_m$ is computed;
+    \item There are $k$ consecutive rounds in the $(m+1)$'th epoch where the leaders are all malicious.
+\end{enumerate}
+Let $c_{\hat{r}}$ be the total number of valid endorsements received by $l_{\hat{r}}$. The probability of launching a $k$-block DSA in the scenario can be computed as:
+
+\begin{equation}
+    F^*(k,p_\epsilon,d,f) = \binom{c_{\hat{r}}}{d}F(p_\epsilon,d,f)^k.
+\end{equation}
+
+In general, we can consider $F^*(k,p_\epsilon,d,f)$ as the lower bound of the probability of launching a $k$-block DSA.
+
+% \Urlmuskip=0mu plus 1mu\relax
+\bibliographystyle{unsrt}  
+\bibliography{references}
+
+\end{document}
