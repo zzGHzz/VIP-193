@@ -368,7 +368,7 @@ Let $p_\epsilon$ be the probability of a node being selected as a committee memb
     F(p_\epsilon,d,f) = \sum_{i=d}^f \binom{f}{i}\,{p_\epsilon}^i\left(1-p_\epsilon\right)^{f-i}
 \end{equation}
 
-Therefore, the probability of adversaries controlling the committee for $k$ consecutive rounds is $F(p_\epsilon,d,f)^k$. Table~\ref{tab:k-prob} lists the values of this probability with different inputs. We set $f$ according to the Byzantine Fault Tolerance~(BFT) assumption. It is a security assumption that is considered reasonable and widely used in practice.
+Therefore, the probability of adversaries controlling the committee for $k$ consecutive rounds is $F(p_\epsilon,d,f)^k$. Table~\ref{tab:dsa-prob} lists the values of this probability with different inputs. We set $f$ according to the Byzantine Fault Tolerance~(BFT) assumption. It is a security assumption that is considered reasonable and widely used in practice.
 
 Now let us consider the worse-case scenario when a malicious leader is selected to generate the block in the last epoch from which the random beacon for the current epoch is computed. The best he can do is to try all the combinations of $d$ valid signatures he receives from the committee members to search for a combination that will result in $k$ consecutive rounds in which leaders are all malicious in the next epoch. Therefore, we can compute a lower bound for the probability of launching a $k$-block DSA as:
 
