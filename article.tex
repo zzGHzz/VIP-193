@@ -19,6 +19,7 @@
 \usepackage{setspace}
 \usepackage{xcolor}
 \usepackage{amsmath}
+\usepackage{multirow}
 
 \title{VIP-193: Committee-Based POA}
 \author{
@@ -367,38 +368,31 @@ Let $p_\epsilon$ be the probability of a node being selected as a committee memb
     F(p_\epsilon,d,f) = \sum_{i=d}^f \binom{f}{i}\,{p_\epsilon}^i\left(1-p_\epsilon\right)^{f-i}
 \end{equation}
 
-Therefore, the probability of adversaries controlling the committee for $k$ consecutive rounds is $F(p_\epsilon,d,f)^k$. Table~\ref{tab:k-prob} lists the values of this probability with different inputs. We set $f$ according to the Byzantine Fault Tolerance~(BFT) assumption. It is a security assumptioned that is considered reasonable and widely used in practice.
+Therefore, the probability of adversaries controlling the committee for $k$ consecutive rounds is $F(p_\epsilon,d,f)^k$. Table~\ref{tab:k-prob} lists the values of this probability with different inputs. We set $f$ according to the Byzantine Fault Tolerance~(BFT) assumption. It is a security assumption that is considered reasonable and widely used in practice.
+
+Now let us consider the worse-case scenario when a malicious leader is selected to generate the block in the last epoch from which the random beacon for the current epoch is computed. The best he can do is to try all the combinations of $d$ valid signatures he receives from the committee members to search for a combination that will result in $k$ consecutive rounds in which leaders are all malicious in the next epoch. Therefore, we can compute a lower bound for the probability of launching a $k$-block DSA as:
+
+\begin{equation}
+    F^*(k,p_\epsilon,d,f) = \binom{c}{d}\cdot\left(\frac{f}{N}\right)^k\cdot F(p_\epsilon,d,f)^k.
+\end{equation}
+
+where $c$ is the total number of committee-member signatures the leader receives. Table~\ref{tab:dsa-prob} below provides some example of the probabilities of launching a DSA. 
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|c|C{2.5cm}|C{2.5cm}|C{2.5cm}|}
+    \begin{tabular}{|c|C{2.5cm}|C{2.5cm}|}
         \hline
-        $N=101$, $f=\lfloor\frac{N}{3}\rfloor$ & $k=1$ & $k=5$ & $k=10$ \\ 
+        $N = 101$, $f=33$ & $k=5$ & $k=10$ \\
         \hline\hline
-        $p_\epsilon=0.1$, $d=7$ & $4.17\times10^{-2}$ & $1.26\times10^{-7}$ & $1.59\times10^{-14}$ \\
+        $d=5$ & $1.57\times10^{-6}$ & $4.38\times10^{-14}$ \\
         \hline
-        $p_\epsilon=0.1$, $d=8$ & $1.41\times10^{-2}$ & $5.58\times10^{-10}$ & $3.11\times10^{-19}$ \\
-        \hline
-        $p_\epsilon=0.15$, $d=11$ & $6.78\times10^{-3}$ & $1.43\times10^{-11}$ & $2.04\times10^{-22}$ \\
+        $d=10$ & $6.04\times10^{-8}$ & $4.56\times10^{-19}$ \\
         \hline
     \end{tabular}
     \vspace{2ex}
-    \caption{Probabilities $F(p_\epsilon,d,f)^k$ for different values of $p_\epsilon$, $d$ and $k$.}
-    \label{tab:k-prob}
+    \caption{Examples of probabilities $F(p_\epsilon,d,f)^k$. Here we compute $p_\epsilon=1.5\cdot d/N$ and $c=\lfloor1.5\cdot d\rfloor$.}
+    \label{tab:dsa-prob}
 \end{table}
-
-Now let us consider the worse-case scenario when
-\begin{enumerate}
-    \item A malicious leader is selected to generate the block in the last epoch from which the random beacon for the current epoch is computed;
-    \item There are $k$ consecutive rounds in the current epoch where the leaders are all malicious.
-\end{enumerate}
-Let $c$ be the total number of valid endorsements received by the leader mentioned in the first condition. The probability of launching a $k$-block DSA in the scenario can be computed as:
-
-\begin{equation}
-    F^*(k,p_\epsilon,d,f) = \binom{c}{d}\,F(p_\epsilon,d,f)^k.
-\end{equation}
-
-In general, we can consider $F^*(k,p_\epsilon,d,f)$ as the lower bound for the probability of launching a $k$-block DSA.
 
 % \Urlmuskip=0mu plus 1mu\relax
 \bibliographystyle{unsrt}  
