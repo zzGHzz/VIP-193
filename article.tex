@@ -272,10 +272,10 @@ A block header body $\Omega$ contains the following elements:
     % \item Other necessary header elements such as the state root, receipt root, gas limit and etc.
 \end{enumerate}
 
-A block consists of a header $\left\{\Omega,{\tt Sig}_{\,l_r}(\Omega)\right\}$ and TX set~$\Sigma_r$.
+A block consists of a header $\left\{\Omega,{\tt Sig}_{\,l_r}(\Omega)\right\}$ and TX set~$\Sigma_r$. Algorithm~\ref{alg:block-valid} describes how to validate a block generated in round $r$. To prevent a malicious leader to deliberately delay the transmission of block elements to cause inconsistency, honest nodes would accept a new block only if they validated it in the same round.
 
 \begin{algorithm}[H]
-\caption{Procedure for validating a block.}
+\caption{Procedure for validating a block generated in round $r$.}
 \label{alg:block-valid}
 \begin{spacing}{1.2}
 \begin{algorithmic}[1]
@@ -360,7 +360,7 @@ Note that TXs will be checked by nodes when validating any newly received block 
 With the committee mechanism in place, the block reward needs to be shared between the leader and committee members. We propose to give half of the total block reward to the leader and the rest equally distributed to the committee members.
 
 \subsection{Double-Spending Attack}
-The main goal of introducing the committee mechanism is to make it more difficult for adversaries to cause inconsistency. Perhaps the most damaging of such attacks is the double-spending attacks~(DSAs)~\cite{Sat08} where adversaries are allowed to take control of a few consecutive consensus rounds such that they can produce two parallel branches to launch a DSA. Here we are going to infer a lower bound for the probability of launching a $k$-block DSA.
+The main goal of introducing the committee mechanism is to make it more difficult for adversaries to cause inconsistency. Perhaps the most damaging of such attacks is the double-spending attacks~(DSAs)~\cite{Sat08} where adversaries are allowed to take control of a few consecutive consensus rounds such that they can produce two parallel branches to launch a DSA. Here we are going to infer a lower bound for the probability of launching a $k$-block DSA. We focus on solving the DSA in a practical synchronous network setting, where we assume that a message be broadcast through the gossip protocol and reach the whole network with some bounded delay.
 
 Let $p_\epsilon$ be the probability of a node being selected as a committee member. This probability is directly related to threshold~$\epsilon$ and is equal to every node thanks to VRF. Let us assume that there are $f$ malicious nodes that can behave arbitrarily. To produce two valid, but contradicting blocks in the same round, adversaries must control both the leader and $d$ committee members. The probability of existence of $d$ committee members being malicious can be computed as:
 
