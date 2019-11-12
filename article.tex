@@ -62,12 +62,13 @@
 
 
 \section{Overview}
-The Proof-of-Authority consensus algorithm~\cite{VWP18}, or POA in short, is efficient of using network bandwidth. It divides time into rounds with a fixed length and assumes that the majority of its (authorized) nodes perform consensus in the same round. 
+The Proof-of-Authority consensus algorithm~\cite{VWP18}, or POA in short, is efficient of using network bandwidth. It divides time into rounds with a fixed length and assumes that the majority of its (authorized) nodes perform consensus in the same round. In each round, nodes select a leader (the node responsible for generating a new block) based on the round number, block height and their local views of active nodes. Therefore, the procedure can be considered instant, which allows more time for transmitting transaction (TX) data in each consensus round.
 
-In each round, nodes select a leader (the node responsible for generating a new block) based on the round number, block height and their local views of active nodes. Therefore, the procedure can be considered instant, which allows more time for transmitting transaction (TX) data in each consensus round.
+POA relies on the staked reputation (by nodes) and economic incentives to keep the system secure. However, it cannot stop malicious leaders causing temporary inconsistency. To improve the security of POA, we propose to introduce a committee to endorse the new block generated in each consensus round. The verifiable random function~(VRF)~\cite{PapEtAl99} is used for nodes to locally decide their committee memberships. With the committee mechanism, a malicious leader would have to collude with the committee to cause inconsistency. However, the property of VRF guarantees that the committee is selected randomly. Therefore, it makes it much more difficult for adversaries to launch such attacks.
 
-POA relies on the staked reputation (by nodes) and economic incentives to keep the system secure. However, it cannot stop malicious leaders causing temporary inconsistency. To improve the security of POA, we propose to introduce a committee to endorse the new block generated in each consensus round. The verifiable random function~(VRF)~\cite{PapEtAl99} is used for nodes to locally decide their committee memberships. With the committee mechanism, a malicious leader would have to collude with the committee to cause inconsistency. However, the property of VRF guarantees that the committee is selected randomly. Therefore, it makes it much more difficult for adversaries to launch such attacks.  
+We assume that the network is synchronous and the messages are transmitted through gossip communication, i.e., if an honest node sends a message or an honest node receives a message, all other honest nodes will receive same message within at most a delay of $\tau$, which is determined by the network configuration and known in advance.
 
+%Note that besides the network synchrony, we also assume that messages be transmitted through gossip communication. Hence, if an honest node receives a message, all other honest nodes will receive the same message with a bounded delay. 
 \section{Specifications}
 \subsection{Notations}
 \renewcommand{\arraystretch}{2}
@@ -360,7 +361,7 @@ Note that TXs will be checked by nodes when validating any newly received block 
 With the committee mechanism in place, the block reward needs to be shared between the leader and committee members. We propose to give half of the total block reward to the leader and the rest equally distributed to the committee members.
 
 \subsection{Double-Spending Attack}
-The main goal of introducing the committee mechanism is to make it more difficult for adversaries to cause inconsistency. Perhaps the most damaging of such attacks is the double-spending attacks~(DSAs)~\cite{Sat08} where adversaries are allowed to take control of a few consecutive consensus rounds such that they can produce two parallel branches to launch a DSA. Here we are going to infer a lower bound for the probability of launching a $k$-block DSA. We focus on solving the DSA in a practical synchronous network setting, where we assume that a message be broadcast through the gossip protocol and reach the whole network with some bounded delay.
+The main goal of introducing the committee mechanism is to make it more difficult for adversaries to cause inconsistency. Perhaps the most damaging of such attacks is the double-spending attacks~(DSAs)~\cite{Sat08} where adversaries are allowed to take control of a few consecutive consensus rounds such that they can produce two parallel branches to launch a DSA. Here we are going to infer a lower bound for the probability of launching a $k$-block DSA. 
 
 Let $p_\epsilon$ be the probability of a node being selected as a committee member. This probability is directly related to threshold~$\epsilon$ and is equal to every node thanks to VRF. Let us assume that there are $f$ malicious nodes that can behave arbitrarily. To produce two valid, but contradicting blocks in the same round, adversaries must control both the leader and $d$ committee members. The probability of existence of $d$ committee members being malicious can be computed as:
 
@@ -376,7 +377,7 @@ Now let us consider the worse-case scenario when a malicious leader is selected 
     F^*(k,p_\epsilon,d,f) = \binom{c}{d}\cdot\left(\frac{f}{N}\right)^k\cdot F(p_\epsilon,d,f)^k.
 \end{equation}
 
-where $c$ is the total number of committee-member signatures the leader receives. Table~\ref{tab:dsa-prob} below provides some example of the probabilities of launching a DSA. 
+where $c$ is the total number of committee-member signatures the leader receives. Table~\ref{tab:dsa-prob} below provides some examples of the probabilities of launching a DSA. 
 
 \begin{table}[H]
     \centering
