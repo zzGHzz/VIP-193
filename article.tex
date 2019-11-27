@@ -337,12 +337,10 @@ In Algorithms~\ref{alg:committee-gen} and \ref{alg:committee-valid}, nodes need 
 To do that, we divide the consensus process into epochs each of which lasts for $L$ rounds where $L$ is a predetermined fixed number. Let $\hat{B}_{u,r}^{\,m}$ be the last block on the canonical chain observed by $u$ in the $m$'th epoch. Node~$u$ can compute a random beacon~$b_u^m$ from $\hat{B}_{u,r}^{\,m}$ as:
 
 \begin{equation}
-    b_u^m \leftarrow H({\tt Sig}_{\,l_r}(\Gamma_{r})).
+    b_u^m \leftarrow H({\tt Sig}_{\,l_r}(\pi_{u_1,r}\,\|\,\pi_{u_1,r}\,\|\,\cdots\,\|\,\pi_{u_d,r})).
 \end{equation}
 
-Here we define $b_u^0=H(B_{\textrm{genesis}})$.
-
-Beacon~$b_u^m$ is then used to calculate VRF messages for the next epoch. In particular, we compute message~${\tt M}_{\,r'}$ in round~$r'$ as:
+Here we define $b_u^0\leftarrow H(B_{\textrm{genesis}})$. Beacon~$b_u^m$ is then used to calculate VRF messages for the next epoch. In particular, we compute message~${\tt M}_{\,r'}$ in round~$r'$ as:
 
 \begin{equation}
     {\tt M}_{\,r'} \leftarrow H(b_u^m\,\|\,r')
@@ -350,7 +348,7 @@ Beacon~$b_u^m$ is then used to calculate VRF messages for the next epoch. In par
 
 where $mL+1\leq r'\leq m(L+1)$.
 
-Now let us consider the case when the leader who generates $\hat{B}_{u,r}^{\,m}$ is malicious. Since signatures from the committee members are deterministic, the best he can do is to go through every combination of $d$ signatures and pick the one that maximizes his interest. The number of possible trials is fairly limited and therefore, we significantly limit the leader's influence on the beacon.
+Now let us consider the case when the leader who generates $\hat{B}_{u,r}^{\,m}$ is malicious. Since signatures from the committee members are deterministic, the best he can do is to go through every combination of $d$ signatures from all the signatures he has received from committee members and pick the one that maximizes his interest. The number of possible trials is fairly limited and therefore, we significantly limit the leader's influence on the beacon.
 
 \subsection{Optimizing Bandwidth Usage}
 A more efficient usage of network bandwidth often results in a higher system throughput. By more efficient, we mean that there is more time to transmit TXs in each round of consensus. To do that, we detach the endorsing process from the block validation process. In particular, committee members can endorse a new block without receiving and validating the complete set of TXs included in the block. See Algorithms~\ref{alg:bs-gen} and \ref{alg:bs-valid} for details. In this way, we would be able to significantly shorten the whole endorsing process and potentially allow more bandwidth used for TX transmission. 
