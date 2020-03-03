@@ -270,7 +270,7 @@ After receiving $d$ valid endorsements, leader~$l_r$ needs to prepare and broadc
     \item Leader's signature on the block summary, ${\tt Sig}_{\,l_r}(s_r)$
     \item VRF proofs of the committee membership from $d$ nodes, $\left\{\pi_{u_i,r}\right\}_{i=1}^d$
     \item Endorsement signatures from the same $d$ nodes, $\left\{{\tt SIG}_{u_i}(\bar{e}_{u,r})\right\}_{i=1}^d$
-    \item For any $1\leq i<j\leq N$, $u_i$'s public key for verifying $\pi_{u_i,r}$ should be strictly smaller than that of $u_j$
+    \item $\forall\,1\leq i<j\leq N$, $\pi_{u_i,r}<\pi_{u,j}$. It is made to reduce the number of combinations $l_r$ can try when arranging the vrf proofs.
     \item Leader's signature, ${\tt Sig}_{\,l_r}(\bar{h}_r)$ where $\bar{h}_r$ represents the header without a signature
     % \item Committee member list $\left(u_1<u_2<\dots<u_d\right)$
     % \item Merkle tree root of VRF proofs $\left\{\pi_{u_i,r}\right\}_{i=1}^d$
@@ -297,7 +297,7 @@ Algorithm~\ref{alg:header-valid} describes how to validate a block header genera
     % \State Verify $\rho\left(\Sigma_r\right)$
     \For{$i=1,2,\dots,d$}
         \If{$i>1$}
-            \State Verify that $u_i$'s public key for verifying $\pi_{u_i,r}$ is larger than that of $u_{i-1}$
+            \State Verify that $\pi_{u,i-1} < \pi_{u,i}$
         \EndIf
         \State Reconstruct and Verify $e_{u_i,r}$ by Algorithm~\ref{alg:endorse-valid}
     \EndFor
