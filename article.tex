@@ -230,7 +230,9 @@ After receiving and verifying $s_r$, nodes~$u$ that are selected as the committe
     \item Signature, ${\tt SIG}_{\,l_r}(\bar{e}_{u,r})$ where $\bar{e}_{u,r}$ represents the endorsement without a signature
 \end{itemize}
 
-{\color{red} Note that it is assumed that the private key used by $u$ to generate $\pi_{u,r}$ is different from the one that generates $u$'s address. It is also assumed that the corresponding public key that will be used by other nodes to verify VRF proof can be assessed so that it does not needs to be transmitted with $e_{u,r}$.}
+{\color{red} Note that it is assumed that the private key used by $u$ to generate $\pi_{u,r}$ is different from the one that generates $u$'s address. It is also assumed that the corresponding public key that will be used by other nodes to verify VRF proof can be assessed so that it does not needs to be transmitted with $e_{u,r}$.
+
+Moreover, node~$u$ needs to wait for a fixed period~$\Delta$ (e.g., one second representing the network delay) before he endorses $s_r$. During this period, if $u$ received multiple block summaries from the same leader, it would endorse the one with minimal hash. Such a measure is designed to prevent a malicious leader to produce multiple block summaries to cause forks.}
 
 % Here we define $\tau_r=s_r\,\|\,{\tt Sig}_{\,l_r}(s_r)$.
 % \begin{algorithm}[H]
