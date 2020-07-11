@@ -1,36 +1,5 @@
 import * as math from 'mathjs';
 
-// /**
-//  * Probability of sufficient malicious committee members for generating a new block 
-//  * 
-//  * @param p probability of being selected as a committee member
-//  * @param d required number of committee members for generating a block
-//  * @param f total number of malicious nodes
-//  */
-// function F(p: number, d: number, f: number): number {
-//     let r = 0;
-//     for (let i = d; i <= f; i++) {
-//         r = r + math.combinations(f, i) * Math.pow(p, i) * Math.pow(1 - p, f - i);
-//     }
-//     return r;
-// }
-
-// const f = 33;
-// const N = 101;
-// const ds = [5, 10];
-// const ps = ds.map(x => x / 101 * 1.5);
-// const ks = [5, 10];
-// for (let i in ds) {
-//     const d = ds[i];
-//     const p = ps[i];
-//     console.log('> ' + F(p, d, f).toExponential(2));
-//     for (let j in ks) {
-//         const k = ks[j];
-//         console.log('* ' + Math.pow(F(p, d, f), k).toExponential(2));
-//         console.log('# ' + (Math.pow(F(p, d, f), k) * Math.pow(f / N, k) * math.combinations(Math.ceil(N * p), d)).toExponential(2));
-//     }
-// }
-
 function F(a: number, b: number, p: number): number {
     return math.combinations(b, a) * Math.pow(p, a) * Math.pow(1 - p, b - a)
 }
@@ -43,23 +12,29 @@ function F(a: number, b: number, p: number): number {
  * @param f - total number of malicious nodes
  * @param N - total number of nodes
  */
-function P(n: number, p: number, f: number, N: number): number {
-    let s1 = 0;
-    for (let m = n; m <= N; m++) {
-        let s2 = 0;
-        for (let i = n; i <= Math.min(m, f); i++) {
-            s2 += F(i, f, p);
-        }
-        s1 += F(m, N, p) * s2;
+function Pr(n: number, p: number, f: number, N: number): number {
+    let s = 0;
+    for (let i = n; i <= f; i++) {
+        s += F(i, f, p);
     }
-    return s1 * f / N;
+    return s * f / N;
 }
 
+function b(d: number, p: number, f: number, N: number): number {
+    let s = 0;
+    for (let i = d; i < N; i++) {
+        s += F(i, N, p) * math.combinations(i, d)
+    }
+    return s * f / N;
+}
+
+function theta(d: number, k: number, p: number, f: number, N: number): number {
+    return b(d, p, f, N) * Math.pow(Pr(d, p, f, N), k)
+}
+
+let f = 20;
 let N = 101;
-let f = 33;
 let p = 8 / 101;
-console.log((33 / 101).toExponential(2))
-for (let n = 0; n <= f; n++) {
-    console.log("n = "+ n + ': ' + P(n, p, f, N).toExponential(2))
-}
-
+let k = 5;
+let d = 4;
+console.log(theta(d, k, p, f, N))
