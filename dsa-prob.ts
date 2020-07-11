@@ -20,21 +20,21 @@ function Pr(n: number, p: number, f: number, N: number): number {
     return s * f / N;
 }
 
-function b(d: number, p: number, f: number, N: number): number {
+function b(d: number, p: number, N: number): number {
     let s = 0;
     for (let i = d; i < N; i++) {
         s += F(i, N, p) * math.combinations(i, d)
     }
-    return s * f / N;
+    return s;
 }
 
 function theta(d: number, k: number, p: number, f: number, N: number): number {
-    return b(d, p, f, N) * Math.pow(Pr(d, p, f, N), k)
+    return b(d, p, N) * Math.pow(Pr(d, p, f, N), k)
 }
 
 let f = 20;
 let N = 101;
 let p = 8 / 101;
-let k = 5;
-let d = 4;
+let k = 7;
+let d = 3;
 console.log(theta(d, k, p, f, N))
